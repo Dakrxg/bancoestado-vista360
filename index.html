@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BancoEstado - Plataforma Vista 360 (Conectado a Python)</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f6f9; color: #333; min-height: 100vh; }
+        
+        /* LOGIN Y REGISTRO */
+        .login-container {
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            background: linear-gradient(135deg, #002244 0%, #003366 100%); padding: 20px;
+        }
+
+        .login-card {
+            background: white; width: 100%; max-width: 430px; padding: 30px 28px;
+            border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center;
+        }
+
+        .login-card .bank-logo { font-size: 2.2rem; margin-bottom: 5px; }
+        .login-card h2 { color: #003366; font-size: 1.5rem; margin-bottom: 4px; }
+        .login-card p { color: #666; font-size: 0.88rem; margin-bottom: 18px; }
+
+        .auth-tabs { display: flex; gap: 6px; margin-bottom: 18px; background: #eef2f7; padding: 4px; border-radius: 8px; }
+        .auth-tab {
+            flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent;
+            color: #003366; font-weight: bold; font-size: 0.85rem; cursor: pointer;
+        }
+        .auth-tab.active { background: #003366; color: white; }
+
+        .form-group { margin-bottom: 14px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.84rem; font-weight: bold; color: #003366; }
+        .form-group input { width: 100%; padding: 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.94rem; outline: none; }
+        .form-group input:focus { border-color: #ff6600; }
+
+        .pass-rules {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;
+            font-size: 0.76rem; color: #475569; text-align: left; margin-bottom: 12px; line-height: 1.4;
+        }
+
+        .btn-login {
+            width: 100%; padding: 12px; background-color: #ff6600; color: white; border: none; border-radius: 6px;
+            font-size: 0.98rem; font-weight: bold; cursor: pointer; margin-top: 6px; transition: background 0.2s;
+        }
+        .btn-login:hover { background-color: #e65c00; }
+
+        .btn-unlock {
+            width: 100%; padding: 8px; background-color: #003366; color: white; border: none; border-radius: 6px;
+            font-size: 0.82rem; font-weight: bold; cursor: pointer; margin-top: 10px; display: none;
+        }
+
+        .alert-msg { font-size: 0.84rem; margin-top: 12px; padding: 9px; border-radius: 6px; display: none; font-weight: 600; }
+        .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; }
+        .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #4ade80; }
+
+        /* DASHBOARD */
+        #dashboard-view { display: none; padding: 20px; }
+
+        header {
+            background-color: #003366; color: white; padding: 15px 20px; display: flex;
+            justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+
+        .logo-title { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: bold; }
+        .user-controls { display: flex; align-items: center; gap: 15px; }
+
+        .status-badge {
+            padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;
+            display: flex; align-items: center; gap: 8px; cursor: pointer; border: none;
+        }
+        .online { background-color: #28a745; color: white; }
+        .offline { background-color: #dc3545; color: white; }
+
+        .btn-logout {
+            background: transparent; border: 1px solid rgba(255,255,255,0.4); color: white;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.1); }
+
+        /* BUSCADOR, NUEVO CLIENTE Y DEMO RUTS */
+        .search-card {
+            background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        .search-box { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        input[type="text"], select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; flex: 1; }
+
+        .btn-action {
+            padding: 10px 20px; background-color: #ff6600; color: white; border: none;
+            border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: bold;
+        }
+        .btn-action:hover { background-color: #e65c00; }
+
+        .new-client-panel {
+            display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #003366;
+            border-radius: 8px; padding: 16px; margin-bottom: 14px;
+        }
+        .new-client-panel h4 { color: #003366; margin-bottom: 12px; font-size: 0.95rem; }
+        .new-client-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px;
+        }
+        .new-client-grid label { display: block; font-size: 0.78rem; font-weight: bold; color: #334155; margin-bottom: 4px; }
+        .new-client-grid input, .new-client-grid select { width: 100%; padding: 8px 10px; font-size: 0.88rem; }
+
+        .quick-ruts { display: flex; gap: 6px; align-items: center; font-size: 0.85rem; color: #555; flex-wrap: wrap; }
+        .btn-chip {
+            background: #eef2f7; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 12px;
+            cursor: pointer; font-size: 0.78rem; font-weight: 600; color: #003366; transition: all 0.2s;
+        }
+        .btn-chip:hover { background: #003366; color: white; }
+
+        /* CARDS GRID 360 */
+        .grid-360 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid #003366; }
+        .card h3 { margin-bottom: 15px; color: #003366; font-size: 1.05rem; }
+        .data-item { margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 5px; font-size: 0.9rem; }
+        .amount { font-weight: bold; color: #28a745; }
+
+        /* ACCIONES, TABLA CRUD Y LOG PANEL */
+        .action-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .crud-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.85rem; }
+        .crud-table th { background-color: #003366; color: white; padding: 9px 10px; text-align: left; }
+        .crud-table td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; }
+        .badge-sync { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 0.75rem; }
+        .badge-pend { background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 0.75rem; }
+        .btn-mini { padding: 4px 9px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.78rem; font-weight: bold; margin-right: 4px; }
+        .btn-edit { background: #003366; }
+        .btn-del { background: #dc3545; }
+
+        .log-box {
+            background: #1e1e1e; color: #00ff66; font-family: monospace; padding: 15px;
+            border-radius: 6px; margin-top: 15px; height: 120px; overflow-y: auto; font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA 1: LOGIN Y REGISTRO (SQLITE) -->
+    <div id="login-view" class="login-container">
+        <div class="login-card">
+            <div class="bank-logo">🏛️</div>
+            <h2>BancoEstado</h2>
+            <p>Sistema de Atención Integral "Vista 360"</p>
+
+            <div class="auth-tabs">
+                <button type="button" id="tab-login" class="auth-tab active" onclick="cambiarTabAuth('login')">Iniciar Sesión</button>
+                <button type="button" id="tab-register" class="auth-tab" onclick="cambiarTabAuth('register')">Registrar Usuario</button>
+            </div>
+            
+            <form id="form-login" onsubmit="ejecutarLogin(event)">
+                <div class="form-group">
+                    <label for="user-email">Correo Institucional</label>
+                    <input type="email" id="user-email" value="d.monteleone@bancoestado.cl" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-pass">Contraseña</label>
+                    <input type="password" id="user-pass" value="Banco2026#" required>
+                </div>
+                <button type="submit" class="btn-login">Iniciar Sesión (Vía API Python)</button>
+                <button type="button" id="btn-unlock-user" class="btn-unlock" onclick="desbloquearUsuario()">🔓 Autorización Supervisor: Desbloquear Cuenta</button>
+            </form>
+
+            <form id="form-register" style="display: none;" onsubmit="ejecutarRegistro(event)">
+                <div class="form-group">
+                    <label for="reg-nombre">Nombre Completo Ejecutivo</label>
+                    <input type="text" id="reg-nombre" placeholder="Ej: Ariel Venegas" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Correo Institucional</label>
+                    <input type="email" id="reg-email" placeholder="Ej: a.venegas@bancoestado.cl" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-pass">Contraseña Segura</label>
+                    <input type="password" id="reg-pass" placeholder="Ej: Clave2026#" required>
+                </div>
+                <div class="pass-rules">
+                    <strong>Política de Seguridad (SQLite):</strong><br>
+                    • Mínimo 8 caracteres &nbsp;|&nbsp; • Mayúscula y minúscula<br>
+                    • Al menos 1 número &nbsp;|&nbsp; • Al menos 1 símbolo (#, $, @, !)
+                </div>
+                <button type="submit" class="btn-login">Registrar en Base de Datos</button>
+            </form>
+
+            <div id="auth-feedback" class="alert-msg"></div>
+        </div>
+    </div>
+
+    <!-- PANTALLA 2: DASHBOARD VISTA 360 -->
+    <div id="dashboard-view">
+        <header>
+            <div class="logo-title">
+                <span>🏛️ BancoEstado</span> | <span>Vista 360 del Cliente</span>
+            </div>
+            <div class="user-controls">
+                <span id="session-user-name" style="font-size: 0.9rem;">Ejecutivo: d.monteleone@bancoestado.cl</span>
+                <button id="toggle-net-btn" class="status-badge online" onclick="toggleRed()">
+                    <span id="dot">🟢</span> <span id="net-text">En Línea</span>
+                </button>
+                <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión 🚪</button>
+            </div>
+        </header>
+
+        <!-- BÚSQUEDA, AGREGAR NUEVO CLIENTE Y RUTS EN SQLITE -->
+        <div class="search-card">
+            <div class="search-box">
+                <input type="text" id="rut-input" placeholder="Ingrese RUT del Cliente (Ej: 18.762.431-5)" value="18.762.431-5">
+                <button class="btn-action" onclick="buscarCliente()">Buscar Cliente</button>
+                <button class="btn-action" style="background-color: #003366;" onclick="toggleFormNuevoCliente()">+ Nuevo Cliente</button>
+            </div>
+
+            <!-- PANEL DESPLEGABLE PARA GUARDAR NUEVO CLIENTE EN SQLITE -->
+            <form id="form-nuevo-cliente" class="new-client-panel" onsubmit="guardarNuevoCliente(event)">
+                <h4>➕ Registrar Nuevo Cliente en Base de Datos Local (SQLite)</h4>
+                <div class="new-client-grid">
+                    <div>
+                        <label>RUT Cliente *</label>
+                        <input type="text" id="nc-rut" placeholder="Ej: 22.603.238-5" required>
+                    </div>
+                    <div>
+                        <label>Nombre Completo *</label>
+                        <input type="text" id="nc-nombre" placeholder="Ej: Diego Monteleone Venegas" required>
+                    </div>
+                    <div>
+                        <label>Estado Biometría</label>
+                        <select id="nc-bio">
+                            <option value="Verificada OK">Verificada OK</option>
+                            <option value="Pendiente de Enrolamiento">Pendiente de Enrolamiento</option>
+                            <option value="Falla de Latencia de Red">Falla de Latencia de Red</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Saldo CuentaRUT</label>
+                        <input type="text" id="nc-cuentarut" placeholder="Ej: $250.000" value="$250.000">
+                    </div>
+                    <div>
+                        <label>Saldo Cuenta Ahorro</label>
+                        <input type="text" id="nc-ahorro" placeholder="Ej: $500.000" value="$500.000">
+                    </div>
+                    <div>
+                        <label>Límite Transf. 24h</label>
+                        <input type="text" id="nc-limite" placeholder="Ej: $200.000" value="$200.000">
+                    </div>
+                    <div>
+                        <label>Score Crediticio</label>
+                        <input type="text" id="nc-score" value="740 Puntos (Bueno)">
+                    </div>
+                    <div>
+                        <label>Crédito Pre-aprobado</label>
+                        <input type="text" id="nc-credito" value="$1.500.000">
+                    </div>
+                    <div>
+                        <label>Alerta de Riesgo</label>
+                        <input type="text" id="nc-alerta" value="Sin Alertas">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn-action" style="background-color: #28a745; padding: 8px 16px; font-size: 0.88rem;">💾 Guardar Cliente en SQLite</button>
+                    <button type="button" class="btn-action" style="background-color: #64748b; padding: 8px 14px; font-size: 0.88rem;" onclick="toggleFormNuevoCliente()">Cancelar</button>
+                </div>
+                <div id="nc-feedback" class="alert-msg"></div>
+            </form>
+
+            <div style="font-weight: bold; font-size: 0.82rem; color: #003366; margin-bottom: 6px;">Clientes almacenados en SQLite (Consulta API Flask):</div>
+            <div class="quick-ruts" id="quick-ruts-container"></div>
+        </div>
+
+        <!-- CARDS DINÁMICAS VISTA 360 -->
+        <div class="grid-360">
+            <div class="card">
+                <h3>👤 Datos del Cliente</h3>
+                <div class="data-item"><span>Nombre:</span> <strong id="c-nombre">Cargando...</strong></div>
+                <div class="data-item"><span>RUT:</span> <strong id="c-rut">18.762.431-5</strong></div>
+                <div class="data-item"><span>Biometría (Huella):</span> <strong id="c-bio">--</strong></div>
+            </div>
+
+            <div class="card">
+                <h3>💳 Saldos Consolidados</h3>
+                <div class="data-item"><span>CuentaRUT:</span> <span class="amount" id="c-cuentarut">$0</span></div>
+                <div class="data-item"><span>Cuenta de Ahorro:</span> <span class="amount" id="c-ahorro">$0</span></div>
+                <div class="data-item"><span>Límite Transf. 24h:</span> <span id="c-limite">$0</span></div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Evaluador de Riesgo</h3>
+                <div class="data-item"><span>Score Crediticio:</span> <strong id="c-score">--</strong></div>
+                <div class="data-item"><span>Crédito Pre-aprobado:</span> <span class="amount" id="c-credito">$0</span></div>
+                <div class="data-item"><span>Alerta de Riesgo:</span> <span id="c-alerta">--</span></div>
+            </div>
+        </div>
+
+        <!-- ACCIONES, CRUD SQLITE Y CONTINGENCIA -->
+        <div class="action-card">
+            <h3>📝 Registrar Atención de Cliente (CRUD en SQLite)</h3>
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <select id="tramite-select">
+                    <option value="Apertura CuentaRUT">Apertura CuentaRUT</option>
+                    <option value="Desbloqueo Clave Internet">Desbloqueo Clave Internet</option>
+                    <option value="Reemplazo de Tarjeta (Huella)">Reemplazo de Tarjeta (Huella)</option>
+                    <option value="Solicitud Crédito Consumo">Solicitud Crédito Consumo</option>
+                    <option value="Desbloqueo por Fraude / Ley 20.009">Desbloqueo por Fraude / Ley 20.009</option>
+                </select>
+                
+                <button class="btn-action" onclick="registrarTramite()" style="background-color: #003366;">Guardar Atención</button>
+                <button class="btn-action" onclick="sincronizarManual()" style="background-color: #28a745;">🔄 Sincronizar Pendientes</button>
+            </div>
+
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>RUT Cliente</th>
+                        <th>Nombre Cliente</th>
+                        <th>Trámite Registrado</th>
+                        <th>Hora</th>
+                        <th>Estado SQLite</th>
+                        <th>Acciones (CRUD)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-atenciones"></tbody>
+            </table>
+
+            <div class="log-box" id="terminal-log">
+                [SISTEMA] Conectado al servidor Backend Python Flask + SQLite (http://127.0.0.1:5000).<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5000/api";
+        let estaEnLinea = true;
+        let usuarioLogueado = "d.monteleone@bancoestado.cl";
+
+        function log(mensaje) {
+            const box = document.getElementById('terminal-log');
+            box.innerHTML += `> ${mensaje}<br>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function cambiarTabAuth(tab) {
+            const feedback = document.getElementById('auth-feedback');
+            feedback.style.display = 'none';
+            document.getElementById('btn-unlock-user').style.display = 'none';
+
+            if (tab === 'login') {
+                document.getElementById('form-login').style.display = 'block';
+                document.getElementById('form-register').style.display = 'none';
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-register').classList.remove('active');
+            } else {
+                document.getElementById('form-login').style.display = 'none';
+                document.getElementById('form-register').style.display = 'block';
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('tab-register').classList.add('active');
+            }
+        }
+
+        function mostrarFeedbackAuth(mensaje, esExito, mostrarDesbloqueo = false) {
+            const el = document.getElementById('auth-feedback');
+            el.innerText = mensaje;
+            el.className = 'alert-msg ' + (esExito ? 'alert-success' : 'alert-error');
+            el.style.display = 'block';
+            document.getElementById('btn-unlock-user').style.display = mostrarDesbloqueo ? 'block' : 'none';
+        }
+
+        async function ejecutarRegistro(event) {
+            event.preventDefault();
+            const nombre = document.getElementById('reg-nombre').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-pass').value;
+
+            const response = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, email, password })
+            });
+            const res = await response.json();
+            if (response.ok && res.status === "ok") {
+                mostrarFeedbackAuth(res.mensaje, true);
+                document.getElementById('user-email').value = email;
+                document.getElementById('user-pass').value = '';
+            } else {
+                mostrarFeedbackAuth(res.mensaje, false);
+            }
+        }
+
+        async function ejecutarLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('user-email').value;
+            const pass = document.getElementById('user-pass').value;
+
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: pass })
+            });
+
+            const res = await response.json();
+            if (response.ok && res.status === "ok") {
+                usuarioLogueado = res.usuario;
+                document.getElementById('auth-feedback').style.display = 'none';
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('dashboard-view').style.display = 'block';
+                document.getElementById('session-user-name').innerText = `Ejecutivo: ${res.usuario}`;
+                log(`[AUTENTICACIÓN SQLITE] Login verificado para ${res.usuario}.`);
+                cargarListaClientesSQLite();
+                buscarCliente();
+                cargarAtencionesCRUD();
+            } else {
+                mostrarFeedbackAuth(res.mensaje, false, res.status === "locked");
+            }
+        }
+
+        async function desbloquearUsuario() {
+            const email = document.getElementById('user-email').value;
+            const response = await fetch(`${API_URL}/unlock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const res = await response.json();
+            mostrarFeedbackAuth(res.mensaje, response.ok, false);
+        }
+
+        function cerrarSesion() {
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'flex';
+        }
+
+        // GESTIÓN DE CLIENTES EN SQLITE
+        function toggleFormNuevoCliente() {
+            const panel = document.getElementById('form-nuevo-cliente');
+            const fb = document.getElementById('nc-feedback');
+            fb.style.display = 'none';
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        async function cargarListaClientesSQLite() {
+            const response = await fetch(`${API_URL}/clientes`);
+            const clientes = await response.json();
+            const container = document.getElementById('quick-ruts-container');
+            container.innerHTML = clientes.map((c, idx) => `
+                <button class="btn-chip" onclick="cargarRutDemo('${c.rut}')">${idx + 1}. ${c.nombre.split(' ').slice(0, 2).join(' ')}</button>
+            `).join('');
+        }
+
+        async function guardarNuevoCliente(event) {
+            event.preventDefault();
+            const payload = {
+                rut: document.getElementById('nc-rut').value,
+                nombre: document.getElementById('nc-nombre').value,
+                biometria: document.getElementById('nc-bio').value,
+                cuentaRut: document.getElementById('nc-cuentarut').value,
+                cuentaAhorro: document.getElementById('nc-ahorro').value,
+                limite24h: document.getElementById('nc-limite').value,
+                score: document.getElementById('nc-score').value,
+                creditoPre: document.getElementById('nc-credito').value,
+                alerta: document.getElementById('nc-alerta').value
+            };
+
+            const response = await fetch(`${API_URL}/clientes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const res = await response.json();
+            const fb = document.getElementById('nc-feedback');
+
+            if (response.ok && res.status === "ok") {
+                fb.style.display = 'none';
+                document.getElementById('form-nuevo-cliente').style.display = 'none';
+                document.getElementById('rut-input').value = res.cliente.rut;
+                actualizarUICliente(res.cliente);
+                cargarListaClientesSQLite();
+                log(`<span style='color:#00ff66'>[SQLITE CLIENTES] ${res.mensaje}</span>`);
+                document.getElementById('nc-rut').value = '';
+                document.getElementById('nc-nombre').value = '';
+            } else {
+                fb.innerText = res.mensaje;
+                fb.className = 'alert-msg alert-error';
+                fb.style.display = 'block';
+            }
+        }
+
+        async function buscarCliente() {
+            const rut = document.getElementById('rut-input').value.trim();
+            log(`[API CLIENTE] Solicitando datos unificados en SQLite para el RUT ${rut}...`);
+
+            const response = await fetch(`${API_URL}/cliente/${encodeURIComponent(rut)}`);
+            const res = await response.json();
+            if (res.status === "ok" || res.status === "not_found") {
+                actualizarUICliente(res.cliente);
+            }
+        }
+
+        function actualizarUICliente(cliente) {
+            document.getElementById('c-nombre').innerText = cliente.nombre;
+            document.getElementById('c-rut').innerText = cliente.rut;
+            
+            const bioEl = document.getElementById('c-bio');
+            bioEl.innerText = cliente.biometria;
+            bioEl.style.color = cliente.bioColor;
+
+            document.getElementById('c-cuentarut').innerText = cliente.cuentaRut;
+            document.getElementById('c-ahorro').innerText = cliente.cuentaAhorro;
+            document.getElementById('c-limite').innerText = cliente.limite24h;
+
+            document.getElementById('c-score').innerText = cliente.score;
+            document.getElementById('c-credito').innerText = cliente.creditoPre;
+            
+            const alertaEl = document.getElementById('c-alerta');
+            alertaEl.innerText = cliente.alerta;
+            alertaEl.style.color = cliente.alertaColor;
+        }
+
+        function cargarRutDemo(rut) {
+            document.getElementById('rut-input').value = rut;
+            buscarCliente();
+        }
+
+        // OPERACIONES CRUD DE ATENCIONES EN SQLITE
+        async function cargarAtencionesCRUD() {
+            const response = await fetch(`${API_URL}/atenciones`);
+            const lista = await response.json();
+            const tbody = document.getElementById('tabla-atenciones');
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b;">No hay atenciones registradas aún en SQLite.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = lista.map(a => `
+                <tr>
+                    <td><strong>#${a.id_atencion}</strong></td>
+                    <td>${a.rut_cliente}</td>
+                    <td>${a.nombre_cliente}</td>
+                    <td>${a.tramite}</td>
+                    <td>${a.fecha}</td>
+                    <td>${a.estado_sincronizado === 1
+                        ? '<span class="badge-sync">Sincronizado Core</span>'
+                        : '<span class="badge-pend">Pendiente Offline</span>'}</td>
+                    <td>
+                        <button class="btn-mini btn-edit" onclick="editarAtencion(${a.id_atencion}, '${a.tramite}')">Editar</button>
+                        <button class="btn-mini btn-del" onclick="eliminarAtencion(${a.id_atencion})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function registrarTramite() {
+            const rut = document.getElementById('c-rut').innerText;
+            const nombreCliente = document.getElementById('c-nombre').innerText;
+            const tramite = document.getElementById('tramite-select').value;
+            const payload = {
+                rut: rut,
+                nombreCliente: nombreCliente,
+                tramite: tramite,
+                ejecutivo: usuarioLogueado,
+                fecha: new Date().toLocaleTimeString(),
+                sincronizado: estaEnLinea ? 1 : 0
+            };
+
+            const response = await fetch(`${API_URL}/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const res = await response.json();
+            if (estaEnLinea) {
+                log(`<span style='color:#00ff66'>[SQLITE + CORE] ${res.mensaje} (RUT: ${rut}).</span>`);
+            } else {
+                log(`<span style='color:#ffbb00'>[MODO OFFLINE] ${res.mensaje} (RUT: ${rut}).</span>`);
+            }
+            cargarAtencionesCRUD();
+        }
+
+        async function editarAtencion(id, tramiteActual) {
+            const nuevoTramite = prompt("Editar tipo de trámite en SQLite:", tramiteActual);
+            if (!nuevoTramite || nuevoTramite.trim() === "") return;
+
+            const response = await fetch(`${API_URL}/atenciones/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tramite: nuevoTramite })
+            });
+            const res = await response.json();
+            log(`<span style='color:#38bdf8'>[CRUD UPDATE] ${res.mensaje}</span>`);
+            cargarAtencionesCRUD();
+        }
+
+        async function eliminarAtencion(id) {
+            const response = await fetch(`${API_URL}/atenciones/${id}`, { method: 'DELETE' });
+            const res = await response.json();
+            log(`<span style='color:#f87171'>[CRUD DELETE] ${res.mensaje}</span>`);
+            cargarAtencionesCRUD();
+        }
+
+        async function sincronizarPendientesSQLite() {
+            const response = await fetch(`${API_URL}/sync-all`, { method: 'POST' });
+            const res = await response.json();
+            if (res.total > 0) {
+                log(`<span style='color:#00ff66'>[SYNC SQLITE OK] ${res.mensaje}</span>`);
+                cargarAtencionesCRUD();
+            }
+        }
+
+        function toggleRed() {
+            estaEnLinea = !estaEnLinea;
+            const btn = document.getElementById('toggle-net-btn');
+            const dot = document.getElementById('dot');
+            const txt = document.getElementById('net-text');
+
+            if (estaEnLinea) {
+                btn.className = "status-badge online";
+                dot.textContent = "🟢";
+                txt.textContent = "En Línea";
+                log("<span style='color:#00ff66'>[RED] Conexión restablecida con API Flask. Sincronizando pendientes...</span>");
+                sincronizarPendientesSQLite();
+            } else {
+                btn.className = "status-badge offline";
+                dot.textContent = "🔴";
+                txt.textContent = "MODO OFFLINE";
+                log("<span style='color:#ff4444'>[RED] ¡ALERTA! Conexión cortada. Guardando atenciones localmente en SQLite.</span>");
+            }
+        }
+
+        function sincronizarManual() {
+            if (!estaEnLinea) {
+                log("<span style='color:#ff4444'>[ERROR] Active la red ('En Línea') antes de sincronizar pendientes.</span>");
+                return;
+            }
+            sincronizarPendientesSQLite();
+        }
+    </script>
+</body>
+</html>
