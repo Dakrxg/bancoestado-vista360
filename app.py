@@ -98,6 +98,13 @@ def init_db():
         )
     ''')
 
+    # Verificar estructura tabla Atenciones_Offline
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Atenciones_Offline'")
+    if cursor.fetchone():
+        cols = [row[1] for row in cursor.execute("PRAGMA table_info(Atenciones_Offline)").fetchall()]
+        if 'rut_cliente' not in cols:
+            cursor.execute("DROP TABLE Atenciones_Offline")
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Atenciones_Offline (
             id_atencion INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -264,7 +271,7 @@ def unlock_account():
     return jsonify({"status": "ok", "mensaje": f"Cuenta {email} desbloqueada por Supervisor."}), 200
 
 
-# 2. Gestión de Clientes en SQLite (Listar, Consultar Vista 360 y Agregar Nuevo Cliente)
+# 2. Gestión de Clientes en SQLite (Listar, Consultar Vista 360, Agregar y Eliminar)
 @app.route('/api/clientes', methods=['GET'])
 def listar_clientes():
     conn = get_db()
@@ -341,6 +348,16 @@ def get_cliente(rut):
     }), 200
 
 
+@app.route('/api/cliente/<rut>', methods=['DELETE'])
+def eliminar_cliente(rut):
+    conn = get_db()
+    conn.execute("DELETE FROM Clientes WHERE rut_cliente = ?", (rut.strip(),))
+    conn.commit()
+    conn.close()
+    print(f"[SQLITE CLIENTES] Cliente eliminado: {rut}")
+    return jsonify({"status": "ok", "mensaje": f"Cliente {rut} eliminado de SQLite."}), 200
+
+
 # 3. CRUD Completo de Atenciones en SQLite
 @app.route('/api/atenciones', methods=['GET'])
 def listar_atenciones():
@@ -402,6 +419,19 @@ def sincronizar_pendientes():
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "total": total, "mensaje": f"{total} trámite(s) pendientes sincronizados con el Core."}), 200
+
+
+# 4. Auditoría de Usuarios en SQLite
+@app.route('/api/usuarios', methods=['GET'])
+def listar_usuarios_db():
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT id_usuario, nombre, email, rol, password_hash,
+                  intentos_fallidos, cuenta_bloqueada, fecha_registro
+           FROM Usuarios ORDER BY id_usuario ASC"""
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows]), 200
 
 
 if __name__ == '__main__':

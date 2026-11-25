@@ -15,7 +15,7 @@
         }
 
         .login-card {
-            background: white; width: 100%; max-width: 430px; padding: 30px 28px;
+            background: white; width: 100%; max-width: 440px; padding: 30px 28px;
             border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center;
         }
 
@@ -36,9 +36,14 @@
         .form-group input:focus { border-color: #ff6600; }
 
         .pass-rules {
-            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;
-            font-size: 0.76rem; color: #475569; text-align: left; margin-bottom: 12px; line-height: 1.4;
+            display: flex; flex-wrap: wrap; gap: 5px; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 6px; padding: 8px; margin-bottom: 12px; text-align: left;
         }
+        .rule-chip {
+            font-size: 0.74rem; padding: 3px 7px; border-radius: 4px; font-weight: bold;
+            background: #fee2e2; color: #b91c1c;
+        }
+        .rule-chip.ok { background: #dcfce7; color: #15803d; }
 
         .btn-login {
             width: 100%; padding: 12px; background-color: #ff6600; color: white; border: none; border-radius: 6px;
@@ -79,7 +84,7 @@
         }
         .btn-logout:hover { background: rgba(255,255,255,0.1); }
 
-        /* BUSCADOR, NUEVO CLIENTE Y DEMO RUTS */
+        /* BUSCADOR, NUEVO CLIENTE, ELIMINAR CLIENTE Y DEMO RUTS */
         .search-card {
             background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
         }
@@ -90,7 +95,7 @@
             padding: 10px 20px; background-color: #ff6600; color: white; border: none;
             border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: bold;
         }
-        .btn-action:hover { background-color: #e65c00; }
+        .btn-action:hover { opacity: 0.92; }
 
         .new-client-panel {
             display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #003366;
@@ -117,16 +122,18 @@
         .data-item { margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 5px; font-size: 0.9rem; }
         .amount { font-weight: bold; color: #28a745; }
 
-        /* ACCIONES, TABLA CRUD Y LOG PANEL */
-        .action-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .crud-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.85rem; }
+        /* ACCIONES, TABLA CRUD, AUDITORIA USUARIOS Y LOG PANEL */
+        .action-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .crud-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 0.84rem; }
         .crud-table th { background-color: #003366; color: white; padding: 9px 10px; text-align: left; }
         .crud-table td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; }
         .badge-sync { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 0.75rem; }
         .badge-pend { background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 0.75rem; }
+        .badge-lock { background: #fee2e2; color: #b91c1c; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 0.75rem; }
         .btn-mini { padding: 4px 9px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.78rem; font-weight: bold; margin-right: 4px; }
         .btn-edit { background: #003366; }
         .btn-del { background: #dc3545; }
+        .btn-ok { background: #28a745; }
 
         .log-box {
             background: #1e1e1e; color: #00ff66; font-family: monospace; padding: 15px;
@@ -172,12 +179,14 @@
                 </div>
                 <div class="form-group">
                     <label for="reg-pass">Contraseña Segura</label>
-                    <input type="password" id="reg-pass" placeholder="Ej: Clave2026#" required>
+                    <input type="password" id="reg-pass" oninput="verificarClaveEnVivo()" placeholder="Ej: Clave2026#" required>
                 </div>
                 <div class="pass-rules">
-                    <strong>Política de Seguridad (SQLite):</strong><br>
-                    • Mínimo 8 caracteres &nbsp;|&nbsp; • Mayúscula y minúscula<br>
-                    • Al menos 1 número &nbsp;|&nbsp; • Al menos 1 símbolo (#, $, @, !)
+                    <span id="r-len" class="rule-chip">✗ Mín. 8 caracteres</span>
+                    <span id="r-may" class="rule-chip">✗ Mayúscula</span>
+                    <span id="r-min" class="rule-chip">✗ Minúscula</span>
+                    <span id="r-num" class="rule-chip">✗ Número</span>
+                    <span id="r-sim" class="rule-chip">✗ Símbolo (#$@!)</span>
                 </div>
                 <button type="submit" class="btn-login">Registrar en Base de Datos</button>
             </form>
@@ -201,12 +210,13 @@
             </div>
         </header>
 
-        <!-- BÚSQUEDA, AGREGAR NUEVO CLIENTE Y RUTS EN SQLITE -->
+        <!-- BÚSQUEDA, AGREGAR NUEVO CLIENTE, ELIMINAR CLIENTE Y RUTS EN SQLITE -->
         <div class="search-card">
             <div class="search-box">
                 <input type="text" id="rut-input" placeholder="Ingrese RUT del Cliente (Ej: 18.762.431-5)" value="18.762.431-5">
                 <button class="btn-action" onclick="buscarCliente()">Buscar Cliente</button>
                 <button class="btn-action" style="background-color: #003366;" onclick="toggleFormNuevoCliente()">+ Nuevo Cliente</button>
+                <button class="btn-action" style="background-color: #dc3545;" onclick="eliminarClienteActual()">Eliminar Cliente</button>
             </div>
 
             <!-- PANEL DESPLEGABLE PARA GUARDAR NUEVO CLIENTE EN SQLITE -->
@@ -324,6 +334,25 @@
                 [SISTEMA] Conectado al servidor Backend Python Flask + SQLite (http://127.0.0.1:5000).<br>
             </div>
         </div>
+
+        <!-- AUDITORÍA DE USUARIOS EN SQLITE (CONTRASEÑAS CIFRADAS Y BLOQUEOS) -->
+        <div class="action-card" style="border-top: 4px solid #003366;">
+            <h3>🔐 Auditoría de Usuarios en Base de Datos (Tabla Usuarios - SQLite)</h3>
+            <table class="crud-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Correo Institucional</th>
+                        <th>Password Hash (SHA-256 en SQLite)</th>
+                        <th>Intentos Fallidos</th>
+                        <th>Estado Cuenta</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-usuarios-db"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -335,6 +364,21 @@
             const box = document.getElementById('terminal-log');
             box.innerHTML += `> ${mensaje}<br>`;
             box.scrollTop = box.scrollHeight;
+        }
+
+        function verificarClaveEnVivo() {
+            const p = document.getElementById('reg-pass').value;
+            setChip('r-len', p.length >= 8, 'Mín. 8 caracteres');
+            setChip('r-may', /[A-Z]/.test(p), 'Mayúscula');
+            setChip('r-min', /[a-z]/.test(p), 'Minúscula');
+            setChip('r-num', /[0-9]/.test(p), 'Número');
+            setChip('r-sim', /[!@#$%^&*(),.?":{}|<>_\-+=/\\]/.test(p), 'Símbolo (#$@!)');
+        }
+
+        function setChip(id, cumple, label) {
+            const el = document.getElementById(id);
+            el.className = cumple ? 'rule-chip ok' : 'rule-chip';
+            el.innerText = (cumple ? '✓ ' : '✗ ') + label;
         }
 
         function cambiarTabAuth(tab) {
@@ -379,6 +423,7 @@
                 mostrarFeedbackAuth(res.mensaje, true);
                 document.getElementById('user-email').value = email;
                 document.getElementById('user-pass').value = '';
+                verificarClaveEnVivo();
             } else {
                 mostrarFeedbackAuth(res.mensaje, false);
             }
@@ -406,6 +451,7 @@
                 cargarListaClientesSQLite();
                 buscarCliente();
                 cargarAtencionesCRUD();
+                cargarUsuariosSQLite();
             } else {
                 mostrarFeedbackAuth(res.mensaje, false, res.status === "locked");
             }
@@ -420,6 +466,37 @@
             });
             const res = await response.json();
             mostrarFeedbackAuth(res.mensaje, response.ok, false);
+        }
+
+        async function cargarUsuariosSQLite() {
+            const response = await fetch(`${API_URL}/usuarios`);
+            const usuarios = await response.json();
+            document.getElementById('tabla-usuarios-db').innerHTML = usuarios.map(u => `
+                <tr>
+                    <td><strong>#${u.id_usuario}</strong></td>
+                    <td>${u.nombre}</td>
+                    <td>${u.email}</td>
+                    <td><code>${u.password_hash.substring(0, 24)}...</code></td>
+                    <td><strong>${u.intentos_fallidos} / 3</strong></td>
+                    <td>${u.cuenta_bloqueada === 1
+                        ? '<span class="badge-lock">BLOQUEADA (1)</span>'
+                        : '<span class="badge-sync">Activa (0)</span>'}</td>
+                    <td>${u.cuenta_bloqueada === 1
+                        ? `<button class="btn-mini btn-ok" onclick="desbloquearDesdeTabla('${u.email}')">Desbloquear</button>`
+                        : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function desbloquearDesdeTabla(email) {
+            const response = await fetch(`${API_URL}/unlock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const res = await response.json();
+            log(`<span style='color:#00ff66'>[SEGURIDAD SQLITE] ${res.mensaje}</span>`);
+            cargarUsuariosSQLite();
         }
 
         function cerrarSesion() {
@@ -516,6 +593,22 @@
         function cargarRutDemo(rut) {
             document.getElementById('rut-input').value = rut;
             buscarCliente();
+        }
+
+        async function eliminarClienteActual() {
+            const rut = document.getElementById('c-rut').innerText.trim();
+            const nombre = document.getElementById('c-nombre').innerText;
+            if (!rut || nombre === "Cliente Nuevo / No Registrado") return;
+            if (!confirm(`¿Eliminar al cliente ${nombre} (${rut}) de SQLite?`)) return;
+
+            const response = await fetch(`${API_URL}/cliente/${encodeURIComponent(rut)}`, { method: 'DELETE' });
+            const res = await response.json();
+            if (response.ok) {
+                log(`<span style='color:#f87171'>[SQLITE CLIENTES] ${res.mensaje}</span>`);
+                await cargarListaClientesSQLite();
+                document.getElementById('rut-input').value = "18.762.431-5";
+                buscarCliente();
+            }
         }
 
         // OPERACIONES CRUD DE ATENCIONES EN SQLITE
